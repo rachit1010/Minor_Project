@@ -1,0 +1,1482 @@
+Splash Screen.java
+
+package com.example.hydramail.ui;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.os.Handler;
+import android.view.WindowManager;
+
+import com.example.hydramail.R;
+
+public class SplashScreen extends AppCompatActivity {
+    private static int SPLASH_TIME_OUT = 3000;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_splash_screen);
+
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Intent onBoarding = new Intent(SplashScreen.this, ChooseAccount.class);
+                startActivity(onBoarding);
+                finish();
+            }
+        }, SPLASH_TIME_OUT);
+    }
+}
+
+
+Choose Account.java
+
+package com.example.hydramail.ui;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+
+import com.example.hydramail.R;
+
+import java.util.Locale;
+
+public class ChooseAccount extends AppCompatActivity {
+    private TextToSpeech tts;
+    private boolean IsInitialVoiceFinished;
+    private Button loginButton;
+    private ConstraintLayout loginScreen;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_choose_account);
+
+        loginButton = findViewById(R.id.loginButton);
+        loginButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ChooseAccount.this, MessageDetails.class);
+                startActivity(intent);
+            }
+        });
+
+        loginScreen = findViewById(R.id.loginLayout);
+        loginScreen.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(ChooseAccount.this, MessageDetails.class);
+                startActivity(intent);
+            }
+        });
+
+
+        IsInitialVoiceFinished = false;
+
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int result = tts.setLanguage(Locale.UK);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "This Language is not supported");
+                    }
+                  speak("Welcome to Hydra Mail \n Hydra Mail is a voice based email application that would enable you send your emails \n Please listen to " +
+                          "the instructions carefully \n Tap screen to start");
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            IsInitialVoiceFinished=true;
+                        }
+                    }, 1000);
+                } else {
+                    Log.e("TTS", "Initilization Failed!");
+                }
+            }
+        });
+    }
+
+    private void speak(String text){
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }else{
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+
+}
+
+
+
+Message details
+
+package com.example.hydramail.ui;
+
+import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+
+import com.example.hydramail.R;
+import com.example.hydramail.fragments.EmailFragment;
+import com.example.hydramail.fragments.ToFragment;
+
+public class MessageDetails extends AppCompatActivity{
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_message_details);
+
+        FragmentManager manager = getSupportFragmentManager();
+        Fragment fragment = manager.findFragmentById(R.id.fragment_container_message_details);
+
+        if(fragment == null){
+            fragment = new EmailFragment();
+            manager.beginTransaction().add(R.id.fragment_container_message_details, fragment).commit();// Start the transaction
+        }
+    }
+
+
+
+
+}
+
+
+
+To fragment.java
+
+package com.example.hydramail.fragments;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
+import com.example.hydramail.R;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+import java.util.Locale;
+
+import static android.app.Activity.RESULT_OK;
+
+
+/**
+ * A simple {@link Fragment} subclass.
+ */
+public class ToFragment extends Fragment {
+    private Button nextButton;
+    private TextToSpeech tts;
+    private boolean IsInitialVoiceFinished;
+    private ConstraintLayout screenClick;
+    TextInputEditText toEditText;
+
+    private static final int RECOGNIZER_RESULT = 1;
+
+
+    public ToFragment() {
+        // Required empty public constructor
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+
+
+        View view = inflater.inflate(R.layout.fragment_to, container, false);
+
+        screenClick = view.findViewById(R.id.to_fragment_screen);
+        nextButton = view.findViewById(R.id.nextButtonTo);
+        toEditText = view.findViewById(R.id.to_edit_text);
+
+        View.OnTouchListener otl = new View.OnTouchListener() {
+            public boolean onTouch (View v, MotionEvent event) {
+                return true; // the listener has consumed the event
+            }
+        };
+
+        toEditText.setOnTouchListener(otl);
+
+
+        screenClick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent speechIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speech to Text");
+                startActivityForResult(speechIntent, 1);
+            }
+        });
+
+
+        nextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Bundle bundle = requireArguments();
+
+                String recipient = toEditText.getText().toString();
+                String email = bundle.getString("Email");
+                String password = bundle.getString("Password");
+
+
+                bundle.putString("Recipient", recipient);
+                bundle.putString("Email", email);
+                bundle.putString("Password", password);
+
+
+                FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+                SubjectFragment subjectFragment = new SubjectFragment();
+                subjectFragment.setArguments(bundle);
+
+                fragmentTransaction.replace(R.id.fragment_container_message_details, subjectFragment);
+                fragmentTransaction.commit();
+
+            }
+        });
+
+
+        IsInitialVoiceFinished = false;
+
+        textToSpeech("Login Successful \n Tap on your screen, Please speak recipient email, spell out email address carefully. Sample \n\n j \n\n o\n\n h\n\n n\n\n d\n\n o\n\n e\n\n at gmail.com \n\n johndoe@gmail.com. \n Tap in 3 \n\n 2 \n\n 1");
+
+        return view;
+
+    }
+
+    public void textToSpeech(final String statement){
+        tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int result = tts.setLanguage(Locale.UK);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "This Language is not supported");
+                    }
+                    speak(statement);
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            IsInitialVoiceFinished=true;
+                        }
+                    }, 1000);
+                } else {
+                    Log.e("TTS", "Initialization Failed!");
+                }
+            }
+        });
+
+    }
+
+    private void speak(String text){
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }else{
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+
+        if(requestCode == RECOGNIZER_RESULT && resultCode == RESULT_OK){
+            ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            String rawInput = matches.get(0);
+            String spaces = rawInput.replaceAll("\\s", "");
+            String email = spaces.replaceAll("at", "@");
+            toEditText.setText(email);
+
+            String emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
+
+            if(toEditText.getText().toString().isEmpty()) {
+                textToSpeech("Please enter email address");
+            }else {
+                    if (toEditText.getText().toString().trim().matches(emailPattern)) {
+                        textToSpeech("Valid Email, Please confirm message \n " + toEditText.getText() + "\n \n \nTap below screen to continue");
+                    } else {
+                        textToSpeech("Invalid Email, Please tap screen again");
+                    }
+                }
+
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+}
+
+
+
+
+
+Email fragment
+
+package com.example.hydramail.fragments;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
+import com.example.hydramail.R;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+import java.util.Locale;
+
+import static android.app.Activity.RESULT_OK;
+
+
+/**
+ * A simple {@link Fragment} subclass.
+ */
+public class EmailFragment extends Fragment {
+    private Button nextButton;
+    private TextToSpeech tts;
+    private boolean IsInitialVoiceFinished;
+    private ConstraintLayout screenClick;
+    TextInputEditText emailEditText;
+
+    private static final int RECOGNIZER_RESULT = 1;
+
+
+    public EmailFragment() {
+        // Required empty public constructor
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+
+        View view = inflater.inflate(R.layout.fragment_email, container, false);
+
+        screenClick = view.findViewById(R.id.email_fragment_screen);
+        nextButton = view.findViewById(R.id.nextButtonEmail);
+        emailEditText = view.findViewById(R.id.email_edit_text);
+
+        View.OnTouchListener otl = new View.OnTouchListener() {
+            public boolean onTouch (View v, MotionEvent event) {
+                return true; // the listener has consumed the event
+            }
+        };
+
+        emailEditText.setOnTouchListener(otl);
+
+
+        screenClick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent speechIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speech to Text");
+                startActivityForResult(speechIntent, 1);
+            }
+        });
+
+
+        nextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(emailEditText.getText().toString().isEmpty()) {
+                    textToSpeech("Empty Input \n Please enter your email address");
+                }else{
+                    String email = emailEditText.getText().toString();
+
+                    Bundle bundle = new Bundle();
+                    bundle.putString("Email", email);
+
+                    FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+                    FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+                    PasswordFragment passwordFragment = new PasswordFragment();
+                    passwordFragment.setArguments(bundle);
+
+                    fragmentTransaction.replace(R.id.fragment_container_message_details, passwordFragment);
+                    fragmentTransaction.commit();
+
+                }
+
+
+
+            }
+        });
+
+
+        IsInitialVoiceFinished = false;
+
+        textToSpeech("Tap on your screen, Please speak your email address, spell out email address carefully. \n Sample \n\n j \n\n o\n\n h\n\n n\n\n d\n\n o\n\n e\n\n at gmail.com \n\n johndoe@gmail.com. \n Tap in 3 \n\n 2 \n\n 1");
+
+        return view;
+
+    }
+
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+
+        if(requestCode == RECOGNIZER_RESULT && resultCode == RESULT_OK){
+            ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            String rawInput = matches.get(0);
+            String spaces = rawInput.replaceAll("\\s", "");
+            String email = spaces.replaceAll("at", "@");
+            emailEditText.setText(email);
+
+            String emailPattern = "[a-zA-Z0-9._-]+@[a-z]+\\.+[a-z]+";
+
+            if (emailEditText.getText().toString().trim().matches(emailPattern)) {
+                textToSpeech("Valid Email, Please confirm email \n "+ emailEditText.getText()+ "\n \n \nTap below screen to continue");
+
+            }   else {
+               textToSpeech("Invalid Email, Please tap screen again");
+            }
+
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    public void textToSpeech(final String statement){
+        tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int result = tts.setLanguage(Locale.UK);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "This Language is not supported");
+                    }
+                    speak(statement);
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            IsInitialVoiceFinished=true;
+                        }
+                    }, 1000);
+                } else {
+                    Log.e("TTS", "Initilization Failed!");
+                }
+            }
+        });
+
+    }
+
+
+
+    private void speak(String text){
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }else{
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+}
+
+
+
+
+Password Fragment
+
+package com.example.hydramail.fragments;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
+import com.example.hydramail.R;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+import java.util.Locale;
+
+import static android.app.Activity.RESULT_OK;
+
+
+/**
+ * A simple {@link Fragment} subclass.
+ */
+public class PasswordFragment extends Fragment {
+    private Button nextButton;
+    private TextToSpeech tts;
+    private boolean IsInitialVoiceFinished;
+    private ConstraintLayout screenClick;
+    TextInputEditText passwordEditText;
+
+    private static final int RECOGNIZER_RESULT = 1;
+
+    public PasswordFragment() {
+        // Required empty public constructor
+    }
+
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        View view = inflater.inflate(R.layout.fragment_password, container, false);
+
+
+        nextButton = view.findViewById(R.id.nextButtonPassword);
+        passwordEditText = view.findViewById(R.id.password_edit_text);
+        screenClick = view.findViewById(R.id.password_fragment_screen);
+
+
+
+        View.OnTouchListener otl = new View.OnTouchListener() {
+            public boolean onTouch (View v, MotionEvent event) {
+                return true; // the listener has consumed the event
+            }
+        };
+
+        passwordEditText.setOnTouchListener(otl);
+
+        screenClick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent speechIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speech to Text");
+                startActivityForResult(speechIntent, 1);
+            }
+        });
+
+        nextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Bundle bundle = requireArguments();
+
+                String password = passwordEditText.getText().toString();
+                String email = bundle.getString("Email");
+
+                bundle.putString("Email", email);
+                bundle.putString("Password", password);
+
+                FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+                ToFragment toFragment = new ToFragment();
+                toFragment.setArguments(bundle);
+
+                fragmentTransaction.replace(R.id.fragment_container_message_details, toFragment);
+                fragmentTransaction.commit();
+
+            }
+        });
+
+
+        IsInitialVoiceFinished = false;
+
+        textToSpeech("Tap on your screen, Please spell out password carefully. \n Sample \n\n a \n\n b\n\n c\n\n d\n\n 1\n\n 2\n\n 3\n\n\n\n abc123 \n Tap in 3 \n\n 2 \n\n 1");
+
+        return view;
+    }
+
+
+    public void textToSpeech(final String statement){
+        tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int result = tts.setLanguage(Locale.UK);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "This Language is not supported");
+                    }
+                    speak(statement);
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            IsInitialVoiceFinished=true;
+                        }
+                    }, 1000);
+                } else {
+                    Log.e("TTS", "Initilization Failed!");
+                }
+            }
+        });
+
+    }
+
+
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+
+        if(requestCode == RECOGNIZER_RESULT && resultCode == RESULT_OK){
+            ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            String rawInput = matches.get(0);
+            String spaces = rawInput.replaceAll("\\s", "");
+            String spacesSmall = spaces.toLowerCase();
+            passwordEditText.setText(spacesSmall);
+
+            if(passwordEditText.getText().toString().isEmpty()) {
+                textToSpeech("Please enter password");
+            }else{
+                textToSpeech("Valid, Please confirm password \n "+ passwordEditText.getText()+ "\n \n \nTap below screen to continue");
+
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void speak(String text){
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }else{
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+}
+
+
+
+Subject fragment
+
+package com.example.hydramail.fragments;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
+import com.example.hydramail.R;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+import java.util.Locale;
+
+import static android.app.Activity.RESULT_OK;
+
+
+/**
+ * A simple {@link Fragment} subclass.
+ */
+public class SubjectFragment extends Fragment {
+    private Button nextButton;
+    private TextToSpeech tts;
+    private boolean IsInitialVoiceFinished;
+    private ConstraintLayout screenClick;
+    TextInputEditText subjectEditText;
+
+    private static final int RECOGNIZER_RESULT = 1;
+
+    public SubjectFragment() {
+        // Required empty public constructor
+    }
+
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        View view = inflater.inflate(R.layout.fragment_subject, container, false);
+
+
+        nextButton = view.findViewById(R.id.nextButtonSubject);
+
+
+        subjectEditText = view.findViewById(R.id.subject_edit_text);
+        screenClick = view.findViewById(R.id.subject_fragment_screen);
+
+
+
+        View.OnTouchListener otl = new View.OnTouchListener() {
+            public boolean onTouch (View v, MotionEvent event) {
+                return true; // the listener has consumed the event
+            }
+        };
+
+        subjectEditText.setOnTouchListener(otl);
+
+        screenClick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent speechIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speech to Text");
+                startActivityForResult(speechIntent, 1);
+            }
+        });
+
+        nextButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Bundle bundle = requireArguments();
+
+                String subject = subjectEditText.getText().toString();
+                String recipient = bundle.getString("Recipient");
+                String email = bundle.getString("Email");
+                String password = bundle.getString("Password");
+
+
+                bundle.putString("Subject", subject);
+                bundle.putString("Recipient", recipient);
+                bundle.putString("Email",email );
+                bundle.putString("Password", password);
+
+                FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+                MessageFragment messageFragment = new MessageFragment();
+                messageFragment.setArguments(bundle);
+
+                fragmentTransaction.replace(R.id.fragment_container_message_details, messageFragment);
+                fragmentTransaction.commit();
+            }
+        });
+
+
+        IsInitialVoiceFinished = false;
+
+        textToSpeech("Tap on your screen, Please speak subject of your mail");
+
+        return view;
+    }
+
+    public void textToSpeech(final String statement){
+        tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int result = tts.setLanguage(Locale.UK);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "This Language is not supported");
+                    }
+                    speak(statement);
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            IsInitialVoiceFinished=true;
+                        }
+                    }, 1000);
+                } else {
+                    Log.e("TTS", "Initilization Failed!");
+                }
+            }
+        });
+
+    }
+
+    private void speak(String text){
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }else{
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+
+        if(requestCode == RECOGNIZER_RESULT && resultCode == RESULT_OK){
+            ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            subjectEditText.setText(matches.get(0));
+
+            if(subjectEditText.getText().toString().isEmpty()) {
+                textToSpeech("Please enter email subject");
+            }else{
+                textToSpeech("Valid, Please confirm subject \n "+ subjectEditText.getText()+ "\n \n \nTap below screen to continue");
+
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+}
+
+
+Message fragment
+
+package com.example.hydramail.fragments;
+
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+
+import com.example.hydramail.R;
+import com.google.android.material.textfield.TextInputEditText;
+
+import java.util.ArrayList;
+import java.util.Locale;
+
+import static android.app.Activity.RESULT_OK;
+
+
+/**
+ * A simple {@link Fragment} subclass.
+ */
+public class MessageFragment extends Fragment {
+    private Button finishButton;
+    private TextToSpeech tts;
+    private boolean IsInitialVoiceFinished;
+    private ConstraintLayout screenClick;
+    TextInputEditText messageEditText;
+
+    private static final int RECOGNIZER_RESULT = 1;
+
+    public MessageFragment() {
+        // Required empty public constructor
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        View view = inflater.inflate(R.layout.fragment_message, container, false);
+
+
+        finishButton = view.findViewById(R.id.finishButtonMessage);
+        messageEditText = view.findViewById(R.id.message_edit_text);
+        screenClick = view.findViewById(R.id.message_fragment_screen);
+
+
+        View.OnTouchListener otl = new View.OnTouchListener() {
+            public boolean onTouch (View v, MotionEvent event) {
+                return true; // the listener has consumed the event
+            }
+        };
+
+        messageEditText.setOnTouchListener(otl);
+
+        screenClick.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent speechIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                speechIntent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speech to Text");
+                startActivityForResult(speechIntent, 1);
+            }
+        });
+
+
+        finishButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Bundle bundle = requireArguments();
+
+                String message = messageEditText.getText().toString();
+                String recipient = bundle.getString("Recipient");
+                String subject = bundle.getString("Subject");
+                String email = bundle.getString("Email");
+                String password = bundle.getString("Password");
+
+                bundle.putString("Message", message);
+                bundle.putString("Recipient", recipient);
+                bundle.putString("Subject", subject);
+                bundle.putString("Email",email );
+                bundle.putString("Password", password);
+
+
+                FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+
+                ConfirmFragment confirmFragment = new ConfirmFragment();
+                confirmFragment.setArguments(bundle);
+
+                fragmentTransaction.replace(R.id.fragment_container_message_details, confirmFragment);
+                fragmentTransaction.commit();
+            }
+
+
+        });
+
+
+        IsInitialVoiceFinished = false;
+
+        textToSpeech("Tap on your screen, Please speak email message");
+
+        return view;
+    }
+
+    private void speak(String text){
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }else{
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+
+        if(requestCode == RECOGNIZER_RESULT && resultCode == RESULT_OK){
+            ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            messageEditText.setText(matches.get(0));
+
+
+            if(messageEditText.getText().toString().isEmpty()) {
+                textToSpeech("Please enter email message");
+            }else{
+                textToSpeech("Valid \n \n, Please confirm message \n "+ messageEditText.getText()+ "\n \n \nTap below screen to continue");
+
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    public void textToSpeech(final String statement){
+        tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int result = tts.setLanguage(Locale.UK);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "This Language is not supported");
+                    }
+                    speak(statement);
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            IsInitialVoiceFinished=true;
+                        }
+                    }, 1000);
+                } else {
+                    Log.e("TTS", "Initilization Failed!");
+                }
+            }
+        });
+
+    }
+
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+
+
+}
+
+
+
+Confirm fragment
+
+package com.example.hydramail.fragments;
+
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Bundle;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+
+import android.os.Handler;
+import android.speech.tts.TextToSpeech;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
+
+import com.example.hydramail.server.GmailSender;
+import com.example.hydramail.R;
+import com.example.hydramail.database.DatabaseHelper;
+import com.example.hydramail.model.Mails;
+import com.example.hydramail.adapters.MailAdapter;
+import com.example.hydramail.ui.SentMailsActivity;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+
+public class ConfirmFragment extends Fragment {
+    private TextToSpeech tts;
+    private boolean IsInitialVoiceFinished;
+    private List<Mails> mailList = new ArrayList<>();
+    private MailAdapter mailAdapter;
+    private Context mContext;
+    DatabaseHelper dbHelper;
+    private String email;
+    private String password;
+    private String recipient;
+    private String subject;
+    private String message;
+
+    public ConfirmFragment() {
+        // Required empty public constructor
+    }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        View view = inflater.inflate(R.layout.fragment_confirm, container, false);
+
+
+        Bundle bundle = getArguments();
+
+        email = bundle.getString("Email");
+        password = bundle.getString("Password");
+
+        recipient = bundle.getString("Recipient");
+        subject = bundle.getString("Subject");
+        message = bundle.getString("Message");
+
+
+        TextView toTextView = view.findViewById(R.id.to_text_view);
+        TextView subjectTextView = view.findViewById(R.id.subject_text_view);
+        TextView messageTextView = view.findViewById(R.id.message_text_view);
+        Button sendButton = view.findViewById(R.id.sendButton);
+
+
+        toTextView.setText(recipient);
+        subjectTextView.setText(subject);
+        messageTextView.setText(message);
+
+        final SendEmailTask sendEmailTask = new SendEmailTask();
+
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                sendEmailTask.execute();
+
+                dbHelper = new DatabaseHelper(getActivity());
+                dbHelper.addBook(recipient, message, subject, getContext());
+
+                Intent i = new Intent(getActivity(), SentMailsActivity.class);
+                startActivity(i);
+                ((Activity) getActivity()).overridePendingTransition(0, 0);
+
+                tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+                    @Override
+                    public void onInit(int status) {
+                        if (status == TextToSpeech.SUCCESS) {
+                            int result = tts.setLanguage(Locale.ENGLISH);
+                            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                                Log.e("TTS", "This Language is not supported");
+                            }
+                            speak("Message sent successfully");
+                            new Handler().postDelayed(new Runnable() {
+                                @Override
+                                public void run() {
+                                    IsInitialVoiceFinished=true;
+                                }
+                            }, 3000);
+                        } else {
+                            Log.e("TTS", "Initialization Failed!");
+                        }
+                    }
+                });
+
+
+
+            }
+        });
+
+        IsInitialVoiceFinished = false;
+
+        tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int result = tts.setLanguage(Locale.ENGLISH);
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "This Language is not supported");
+                    }
+                   speak("Please confirm message, you are sending to\n\n\n\n"+ recipient+ "\n\n\n\nyour subject is \n\n\n\n"+subject+ "\n\n\n\n\nYour message is\n\n\n\n "+message+ "\n\n\n\nTap below screen to send");
+                    new Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            IsInitialVoiceFinished=true;
+                        }
+                    }, 3000);
+                } else {
+                    Log.e("TTS", "Initilization Failed!");
+                }
+            }
+        });
+
+
+        return view;
+
+    }
+
+
+
+
+    private void speak(String text){
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, null);
+        }else{
+            tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+        }
+    }
+
+    @Override
+    public void onStop()
+    {
+        super.onStop();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if(tts != null){
+            tts.shutdown();
+        }
+    }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        this.mContext = context;
+         dbHelper =  new DatabaseHelper(context);
+    }
+
+    class SendEmailTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            Log.i("Email sending", "sending start");
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+            try {
+                GmailSender sender = new GmailSender(email, password);
+                //subject, body, sender, to
+                sender.sendMail(subject,
+                        message,
+                        email,
+                        recipient);
+
+                Log.i("Email sending", "send");
+                //Add alert dialog here
+            } catch (Exception e) {
+                Log.i("Email sending", "cannot send");
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            super.onPostExecute(result);
+        }
+
+    }
+}
+
+
+Success fragment
+
+package com.example.hydramail.fragments;
+
+import android.os.Bundle;
+
+import androidx.fragment.app.Fragment;
+
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+
+import com.example.hydramail.R;
+
+
+public class SuccessFragment extends Fragment {
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        // Inflate the layout for this fragment
+        return inflater.inflate(R.layout.fragment_success, container, false);
+    }
+}
+
+
+MyView holder.java
+
+package com.example.hydramail.adapters;
+
+import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
+import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.hydramail.R;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+
+public class MailAdapter extends RecyclerView.Adapter<MailAdapter.MyViewHolder> {
+
+    private Context context;
+    private ArrayList<String> mail_id, mail_recipient, mail_subject, mail_message, mail_timestamp;
+    int position;
+
+    Animation translate_anim;
+
+    MailAdapter(){}
+
+    public class MyViewHolder extends RecyclerView.ViewHolder {
+        public TextView id,recipient,subject,message,timestamp;
+        public FrameLayout mail_layout;
+
+        public MyViewHolder(View view) {
+            super(view);
+
+            recipient = view.findViewById(R.id.email_recipient);
+            subject = view.findViewById(R.id.email_subject);
+            message = view.findViewById(R.id.email_message);
+            timestamp = view.findViewById(R.id.email_date);
+            id = view.findViewById(R.id.mail_id);
+            mail_layout = view.findViewById(R.id.item_view_layout);
+
+            //Animate Recycler View
+            translate_anim = AnimationUtils.loadAnimation(context, R.anim.translate_anim);
+            mail_layout.setAnimation(translate_anim);
+        }
+    }
+
+    public MailAdapter(Context context, ArrayList<String> mail_id, ArrayList<String> mail_recipient, ArrayList<String> mail_subject, ArrayList<String> mail_message, ArrayList<String> mail_timestamp) {
+        this.context = context;
+        this.mail_id = mail_id;
+        this.mail_recipient = mail_recipient;
+        this.mail_subject = mail_subject;
+        this.mail_message = mail_message;
+        this.mail_timestamp = mail_timestamp;
+    }
+
+    @Override
+    public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        View itemView = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.mail_item_view, parent, false);
+
+        return new MyViewHolder(itemView);
+    }
+
+    @Override
+    public void onBindViewHolder(MyViewHolder holder, int position) {
+        this.position = position;
+        holder.id.setText(String.valueOf(mail_id.get(position)));
+        holder.recipient.setText(String.valueOf(mail_recipient.get(position)));
+        holder.subject.setText(String.valueOf(mail_subject.get(position)));
+        holder.message.setText(String.valueOf(mail_message.get(position)));
+        holder.timestamp.setText(formatDate(mail_timestamp.get(position)));
+    }
+
+    @Override
+    public int getItemCount() {
+        return mail_id.size();
+    }
+
+    /**
+     * Formatting timestamp to `MMM d` format
+     * Input: 2018-02-21 00:15:42
+     * Output: Feb 21
+     */
+    private String formatDate(String dateStr) {
+        try {
+            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            Date date = fmt.parse(dateStr);
+            SimpleDateFormat fmtOut = new SimpleDateFormat("MMM d");
+            return fmtOut.format(date);
+        } catch (ParseException e) {
+
+        }
+        return "";
+    }
+}
+
+
+
